@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Weather App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* New Animated Background */
+        body {
+            font-family: 'Poppins', sans-serif;
+            transition: background-color 0.4s ease-in-out, color 0.4s ease-in-out;
+            background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #2b3a72, #4c6696);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+            color: #f0f4f8;
+        }
+
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Card styles with a lift-up shadow effect */
+        .weather-card,
+        .forecast-card {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease, background-color 0.3s ease;
+            border-radius: 20px;
+        }
+
+        .dark-mode .weather-card,
+        .dark-mode .forecast-card {
+            background-color: rgba(45, 55, 72, 0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Hover animation for forecast cards */
+        .forecast-card:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .forecast-card:hover {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Search button pulse animation on hover */
+        .search-btn:hover {
+            animation: pulse-animation 1s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(77, 122, 255, 0.4);
+            }
+
+            70% {
+                transform: scale(1.02);
+                box-shadow: 0 0 0 10px rgba(77, 122, 255, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(77, 122, 255, 0);
+            }
+        }
+
+        /* Loader spin animation */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a90e2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* New entrance animation for weather display */
+        @keyframes pop-in {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #weather-display.show {
+            animation: pop-in 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        }
+
+        /* New icon shadow for better visibility */
+        .icon-shadow {
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+        }
+
+        /* Custom text colors */
+        .text-date {
+            color: #8892b0;
+        }
+
+        .dark-mode .text-date {
+            color: #a5a9bd;
+        }
+
+        .text-description {
+            color: #52669e;
+        }
+
+        .dark-mode .text-description {
+            color: #a1c4fd;
+        }
+
+        .text-detail-label {
+            color: #334155;
+        }
+
+        .dark-mode .text-detail-label {
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 md:p-10">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">SkyCast</h1>
+                <button id="theme-toggle"
+                    class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none transition-colors duration-300">
+                    <svg id="sun-icon" class="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.722 2.278a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zm-2.278 4.722a1 1 0 01-1.414 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.414zM10 18a1 1 0 01-1-1v-1a1 1 0 112 0v1a1 1 0 01-1 1zM5.278 15.722a1 1 0 01-1.414 0l-.707-.707a1 1 0 111.414-1.414l.707.707a1 1 0 010 1.414zM3 10a1 1 0 011-1h1a1 1 0 110 2H4a1 1 0 01-1-1zM4.278 5.278a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414z" />
+                    </svg>
+                    <svg id="moon-icon" class="w-6 h-6 text-indigo-500 hidden" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-8">
+                <div class="relative flex-grow">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <input type="text" id="city-input" placeholder="Enter city name..."
+                        class="w-full pl-10 pr-4 p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button id="search-btn"
+                    class="search-btn p-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Search
+                </button>
+            </div>
+
+            <div id="status-container" class="flex justify-center items-center mb-8">
+                <div id="loader" class="loader hidden"></div>
+                <div id="message-box" class="hidden p-4 rounded-lg text-sm text-center font-medium"></div>
+            </div>
+
+            <div id="weather-display" class="hidden">
+                <div class="weather-card bg-gray-50 dark:bg-gray-700 rounded-xl p-6 text-center shadow-lg mb-8">
+                    <h2 id="city-name" class="text-3xl font-bold mb-2"></h2>
+                    <p id="date" class="text-sm text-date mb-4"></p>
+                    <img id="weather-icon" src="" alt="Weather icon" class="w-24 h-24 mx-auto mb-4 icon-shadow">
+                    <p id="description" class="text-xl capitalize text-description mb-2"></p>
+                    <p class="text-6xl font-extrabold mb-4"><span id="temperature"></span>&deg;C</p>
+                    <div class="grid grid-cols-2 gap-4 text-left font-medium text-lg">
+                        <div class="flex items-center text-detail-label">
+                            <svg class="w-6 h-6 mr-2 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-10a1 1 0 102 0v2.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L9 10.586V8z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Humidity: <span id="humidity" class="font-bold ml-2"></span>%
+                        </div>
+                        <div class="flex items-center text-detail-label">
+                            <svg class="w-6 h-6 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                <path fill-rule="evenodd"
+                                    d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Wind: <span id="wind-speed" class="font-bold ml-2"></span> km/h
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-bold text-center mb-4">5-Day Forecast</h3>
+                    <div id="forecast-display"
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiKey = '5408c50706ce2276b13d0f0a6e86dfb9'; // 
+            const cityInput = document.getElementById('city-input');
+            const searchBtn = document.getElementById('search-btn');
+            const loader = document.getElementById('loader');
+            const messageBox = document.getElementById('message-box');
+            const weatherDisplay = document.getElementById('weather-display');
+            const cityNameEl = document.getElementById('city-name');
+            const dateEl = document.getElementById('date');
+            const weatherIconEl = document.getElementById('weather-icon');
+            const descriptionEl = document.getElementById('description');
+            const temperatureEl = document.getElementById('temperature');
+            const humidityEl = document.getElementById('humidity');
+            const windSpeedEl = document.getElementById('wind-speed');
+            const forecastDisplay = document.getElementById('forecast-display');
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+
+            // Set up theme from local storage
+            const isDarkMode = localStorage.getItem('theme') === 'dark';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                sunIcon.classList.toggle('hidden');
+                moonIcon.classList.toggle('hidden');
+                if (document.body.classList.contains('dark-mode')) {
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+
+            const showMessage = (text, type = 'error') => {
+                messageBox.textContent = text;
+                messageBox.classList.remove('hidden', 'bg-red-200', 'text-red-800', 'bg-green-200', 'text-green-800');
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-200', 'text-red-800');
+                } else if (type === 'success') {
+                    messageBox.classList.add('bg-green-200', 'text-green-800');
+                }
+            };
+
+            const hideMessage = () => {
+                messageBox.classList.add('hidden');
+            };
+
+            const toggleLoader = (show) => {
+                loader.classList.toggle('hidden', !show);
+                searchBtn.disabled = show;
+                cityInput.disabled = show;
+            };
+
+            const fetchWeather = async (city) => {
+                if (!city) {
+                    showMessage("Please enter a city name.");
+                    return;
+                }
+
+                toggleLoader(true);
+                hideMessage();
+                weatherDisplay.classList.add('hidden');
+                weatherDisplay.classList.remove('show');
+
+                try {
+                    // Fetch current weather
+                    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+                    const weatherResponse = await fetch(weatherUrl);
+                    if (!weatherResponse.ok) {
+                        throw new Error("City not found. Please try again.");
+                    }
+                    const weatherData = await weatherResponse.json();
+
+                    // Fetch 5-day forecast
+                    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+                    const forecastResponse = await fetch(forecastUrl);
+                    if (!forecastResponse.ok) {
+                        throw new Error("Forecast not available for this city.");
+                    }
+                    const forecastData = await forecastResponse.json();
+
+                    displayCurrentWeather(weatherData);
+                    displayForecast(forecastData);
+                    weatherDisplay.classList.remove('hidden');
+                    // Add a small delay to ensure the element is hidden before adding the 'show' class
+                    setTimeout(() => {
+                        weatherDisplay.classList.add('show');
+                    }, 10);
+                } catch (error) {
+                    showMessage(error.message);
+                } finally {
+                    toggleLoader(false);
+                }
+            };
+
+            const displayCurrentWeather = (data) => {
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                cityNameEl.textContent = data.name;
+                dateEl.textContent = new Date().toLocaleDateString('en-US', dateOptions);
+                weatherIconEl.src = `http://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`;
+                descriptionEl.textContent = data.weather[0].description;
+                temperatureEl.textContent = Math.round(data.main.temp);
+                humidityEl.textContent = data.main.humidity;
+                windSpeedEl.textContent = (data.wind.speed * 3.6).toFixed(1); // Convert from m/s to km/h
+            };
+
+            /**
+             * Corrected function to reliably show the next 5 unique days of forecast.
+             */
+            const displayForecast = (data) => {
+                forecastDisplay.innerHTML = '';
+                const dailyForecasts = {};
+                const today = new Date().getDate(); // Get today's calendar date (1-31)
+                let daysCount = 0; // Counter for the number of unique days added
+
+                // Iterate through the forecast list (3-hour steps)
+                for (const item of data.list) {
+                    const date = new Date(item.dt_txt);
+                    const dayDate = date.getDate(); // Calendar date (1-31)
+                    // Create a simple, unique key for the day (e.g., "9/27/2025")
+                    const dayKey = date.toLocaleDateString('en-US');
+
+                    // 1. Skip the current day (dayDate !== today)
+                    // 2. Only record the first entry encountered for any subsequent day (!dailyForecasts[dayKey])
+                    // 3. Stop once we have 5 days (daysCount < 5)
+                    if (dayDate !== today && !dailyForecasts[dayKey] && daysCount < 5) {
+                        dailyForecasts[dayKey] = item;
+                        daysCount++; // Increment the unique day counter
+                    }
+
+                    // Optimization: stop iterating once 5 days are collected
+                    if (daysCount >= 5) {
+                        break;
+                    }
+                }
+
+                // Now iterate over the 5 unique days collected and display them
+                Object.values(dailyForecasts).forEach(item => {
+                    const date = new Date(item.dt_txt);
+                    // Use 'en-US' locale for day abbreviation (Mon, Tue, Wed, etc.)
+                    const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    const temp = Math.round(item.main.temp);
+                    const icon = `http://openweathermap.org/img/wn/${item.weather[0].icon}@2x.png`;
+
+                    const forecastItem = document.createElement('div');
+                    forecastItem.className = 'forecast-card bg-gray-50 dark:bg-gray-700 rounded-xl p-4 text-center shadow-lg';
+                    forecastItem.innerHTML = `
+                        <p class="font-bold mb-2">${day}</p>
+                        <img src="${icon}" alt="Weather icon" class="w-16 h-16 mx-auto mb-2 icon">
+                        <p class="text-xl font-bold">${temp}&deg;C</p>
+                    `;
+                    forecastDisplay.appendChild(forecastItem);
+                });
+            };
+            searchBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                fetchWeather(cityInput.value.trim());
+            });
+
+            cityInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    fetchWeather(cityInput.value.trim());
+                }
+            });
+        });
+    </script>
+</body>
+
+</html
